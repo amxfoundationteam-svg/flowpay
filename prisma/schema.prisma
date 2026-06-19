@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String      @id @default(cuid())
+  clerkId          String      @unique
+  email            String      @unique
+  name             String?
+  mode             UserMode    @default(CONSUMER)
+  createdAt        DateTime    @default(now())
+  wallet           Wallet?
+  stripeCustomerId String?
+
+  sentTransactions     Transaction[] @relation("Sender")
+  receivedTransactions Transaction[] @relation("Receiver")
+  invoices             Invoice[]
+  payouts              Payout[]
+  bankAccounts         BankAccount[]
+}
+
+enum UserMode {
+  CONSUMER
+  BUSINESS
+}
+
+model Wallet {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id])
+  ethAddress   String  @unique
+  polyAddress  String  @unique
+  encryptedKey String
+  usdcBalance  Decimal @default(0) @db.Decimal(20, 6)
+  usdtBalance  Decimal @default(0) @db.Decimal(20, 6)
+}
+
+model Transaction {
+  id          String            @id @default(cuid())
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  senderId    String
+  sender      User              @relation("Sender", fields: [senderId], references: [id])
+  receiverId  String
+  receiver    User              @relation("Receiver", fields: [receiverId], references: [id])
+  amount      Decimal           @db.Decimal(20, 6)
+  currency    String
+  method      PaymentMethod
+  status      TransactionStatus @default(PENDING)
+
+  stripePaymentIntentId String?
+  onChainTxHash         String?
+  achTransferId         String?
+  metadata              Json?
+}
+
+enum PaymentMethod {
+  CARD
+  ACH
+  USDC_POLYGON
+  USDC_ETH
+  USDT_ETH
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  number         String        @unique
+  createdAt      DateTime      @default(now())
+  dueDate        DateTime
+  status         InvoiceStatus @default(DRAFT)
+  issuerId       String
+  issuer         User          @relation(fields: [issuerId], references: [id])
+  clientEmail    String
+  clientName     String
+  lineItems      LineItem[]
+  total          Decimal       @db.Decimal(20, 2)
+  currency       String        @default("USD")
+  paymentMethods String[]
+  paymentLink    String?       @unique
+  paidAt         DateTime?
+  transactionId  String?
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model LineItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id])
+  description String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(20, 2)
+  total       Decimal @db.Decimal(20, 2)
+}
+
+model BankAccount {
+  id                    String  @id @default(cuid())
+  userId                String
+  user                  User    @relation(fields: [userId], references: [id])
+  plaidAccessToken      String
+  plaidAccountId        String
+  institutionName       String
+  accountMask           String
+  accountType           String
+  verified              Boolean @default(false)
+  stripePaymentMethodId String?
+}
+
+model Payout {
+  id             String       @id @default(cuid())
+  createdAt      DateTime     @default(now())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  recipientName  String
+  recipientEmail String
+  amount         Decimal      @db.Decimal(20, 6)
+  currency       String
+  method         PaymentMethod
+  status         PayoutStatus @default(PENDING)
+  memo           String?
+  stripePayoutId String?
+  onChainTxHash  String?
+  achTransferId  String?
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
