@@ -217,7 +217,7 @@ export default function SendPage() {
                 </div>
               </div>
               <div className="bg-blue-50 text-blue-700 text-xs rounded-lg px-3 py-2">
-                Test card: <strong>4242 4242 4242 4242</strong> · Any future expiry · Any CVC
+                Your card details are processed securely via Stripe. FlowPay never stores your card number.
               </div>
             </div>
           </div>
