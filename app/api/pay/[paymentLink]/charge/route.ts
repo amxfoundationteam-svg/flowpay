@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: { paymentLink
           cvc: cardCvc ?? '',
           name: cardName ?? '',
         },
-      })
+      } as any)
 
       const charge = await stripe.charges.create({
         amount: amountCents,
