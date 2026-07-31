@@ -8,12 +8,15 @@ interface Payout {
   createdAt: string; memo?: string
 }
 
-const statusColors: Record<string, string> = {
-  SENT: 'bg-green-100 text-green-700',
-  PROCESSING: 'bg-yellow-100 text-yellow-700',
-  PENDING: 'bg-gray-100 text-gray-600',
-  FAILED: 'bg-red-100 text-red-700',
+const statusBadge: Record<string, string> = {
+  SENT: 'text-gold border-gold/30 bg-gold/8',
+  PROCESSING: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/8',
+  PENDING: 'text-muted-foreground border-border bg-secondary',
+  FAILED: 'text-red-400 border-red-500/30 bg-red-500/8',
 }
+
+const INPUT = 'w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition'
+const BORDER = { border: '1px solid rgba(201,146,42,0.15)' }
 
 export default function PayoutsPage() {
   const [payouts, setPayouts] = useState<Payout[]>([])
@@ -40,8 +43,6 @@ export default function PayoutsPage() {
   const handleBankPayout = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true); setError(''); setSuccess('')
-
-    // First create a Stripe bank token, then payout
     const res = await fetch('/api/payouts/bank', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -58,7 +59,7 @@ export default function PayoutsPage() {
     })
     const data = await res.json()
     if (res.ok) {
-      setSuccess('Payout initiated! Funds will arrive in 1-3 business days.')
+      setSuccess('Payout initiated — funds arrive in 1–3 business days.')
       setBankForm({ recipientName: '', recipientEmail: '', accountHolderName: '', routingNumber: '', accountNumber: '', accountType: 'checking', amount: '', memo: '' })
       fetch('/api/payouts').then(r => r.json()).then(d => setPayouts(d.payouts ?? []))
     } else {
@@ -70,7 +71,6 @@ export default function PayoutsPage() {
   const handleCryptoPayout = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true); setError(''); setSuccess('')
-
     const res = await fetch('/api/payouts/crypto', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -78,7 +78,7 @@ export default function PayoutsPage() {
     })
     const data = await res.json()
     if (res.ok) {
-      setSuccess('Crypto payout sent!')
+      setSuccess('Crypto payout sent.')
       setCryptoForm({ recipientName: '', recipientEmail: '', recipientAddress: '', method: 'USDC_POLYGON', amount: '', memo: '' })
       fetch('/api/payouts').then(r => r.json()).then(d => setPayouts(d.payouts ?? []))
     } else {
@@ -90,191 +90,179 @@ export default function PayoutsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Payouts</h1>
-        <p className="text-sm text-gray-500 mt-1">Send money out of FlowPay to a bank account or external wallet.</p>
+        <h1 className="font-serif font-normal text-2xl tracking-wide text-foreground">Payouts</h1>
+        <p className="text-xs text-muted-foreground mt-1">Send money out of River X to a bank account or external wallet.</p>
       </div>
 
-      <div className="bg-white rounded-2xl border p-6 space-y-5">
-        {/* Tabs */}
+      <div className="bg-card p-6 space-y-5" style={BORDER}>
         <div className="flex gap-2">
-          <button onClick={() => { setTab('bank'); setError(''); setSuccess('') }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${tab === 'bank' ? 'bg-indigo-600 text-white' : 'text-gray-600 border hover:bg-gray-50'}`}>
-            <Landmark size={15} /> Bank (ACH)
-          </button>
-          <button onClick={() => { setTab('crypto'); setError(''); setSuccess('') }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${tab === 'crypto' ? 'bg-indigo-600 text-white' : 'text-gray-600 border hover:bg-gray-50'}`}>
-            <Coins size={15} /> Crypto (USDC/USDT)
-          </button>
+          {[
+            { key: 'bank', label: 'Bank (ACH)', icon: Landmark },
+            { key: 'crypto', label: 'Crypto', icon: Coins },
+          ].map(({ key, label, icon: Icon }) => (
+            <button key={key} onClick={() => { setTab(key as any); setError(''); setSuccess('') }}
+              className={`flex items-center gap-2 px-4 py-2 text-[10px] tracking-[0.14em] uppercase font-medium transition-colors ${
+                tab === key
+                  ? 'bg-gold text-rx-bg font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              style={tab !== key ? { border: '1px solid rgba(201,146,42,0.2)' } : {}}>
+              <Icon size={13} /> {label}
+            </button>
+          ))}
         </div>
 
-        {/* Bank payout form */}
         {tab === 'bank' && (
           <form onSubmit={handleBankPayout} className="space-y-4">
-            <div className="bg-blue-50 text-blue-700 text-xs rounded-lg px-3 py-2">
-              Enter the recipient's bank details. Funds arrive in <strong>1-3 business days</strong> via ACH.
+            <div className="text-xs text-muted-foreground px-3 py-2" style={{ border: '1px solid rgba(201,146,42,0.12)', background: 'rgba(201,146,42,0.04)' }}>
+              Enter the recipient's bank details. Funds arrive in <strong className="text-foreground">1–3 business days</strong> via ACH.
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Recipient Name</label>
-                <input required value={bankForm.recipientName} onChange={e => setBankForm(f => ({ ...f, recipientName: e.target.value }))}
-                  placeholder="Jane Smith"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <label className="block text-[10px] text-muted-foreground mb-1">Recipient Name</label>
+                <input required value={bankForm.recipientName} onChange={e => setBankForm(f => ({ ...f, recipientName: e.target.value }))} placeholder="Jane Smith" className={INPUT} />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Recipient Email</label>
-                <input required type="email" value={bankForm.recipientEmail} onChange={e => setBankForm(f => ({ ...f, recipientEmail: e.target.value }))}
-                  placeholder="jane@example.com"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <label className="block text-[10px] text-muted-foreground mb-1">Recipient Email</label>
+                <input required type="email" value={bankForm.recipientEmail} onChange={e => setBankForm(f => ({ ...f, recipientEmail: e.target.value }))} placeholder="jane@example.com" className={INPUT} />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Account Holder Name (on bank account)</label>
-              <input required value={bankForm.accountHolderName} onChange={e => setBankForm(f => ({ ...f, accountHolderName: e.target.value }))}
-                placeholder="Jane Smith"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label className="block text-[10px] text-muted-foreground mb-1">Account Holder Name (on bank account)</label>
+              <input required value={bankForm.accountHolderName} onChange={e => setBankForm(f => ({ ...f, accountHolderName: e.target.value }))} placeholder="Jane Smith" className={INPUT} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Routing Number</label>
-                <input required value={bankForm.routingNumber} onChange={e => setBankForm(f => ({ ...f, routingNumber: e.target.value }))}
-                  placeholder="9 digits" maxLength={9}
-                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <label className="block text-[10px] text-muted-foreground mb-1">Routing Number</label>
+                <input required value={bankForm.routingNumber} onChange={e => setBankForm(f => ({ ...f, routingNumber: e.target.value }))} placeholder="9 digits" maxLength={9} className={`${INPUT} font-mono`} />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Account Number</label>
-                <input required value={bankForm.accountNumber} onChange={e => setBankForm(f => ({ ...f, accountNumber: e.target.value }))}
-                  placeholder="Account number"
-                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <label className="block text-[10px] text-muted-foreground mb-1">Account Number</label>
+                <input required value={bankForm.accountNumber} onChange={e => setBankForm(f => ({ ...f, accountNumber: e.target.value }))} placeholder="Account number" className={`${INPUT} font-mono`} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Account Type</label>
-                <select value={bankForm.accountType} onChange={e => setBankForm(f => ({ ...f, accountType: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <label className="block text-[10px] text-muted-foreground mb-1">Account Type</label>
+                <select value={bankForm.accountType} onChange={e => setBankForm(f => ({ ...f, accountType: e.target.value }))} className={INPUT}>
                   <option value="checking">Checking</option>
                   <option value="savings">Savings</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Amount (USD)</label>
+                <label className="block text-[10px] text-muted-foreground mb-1">Amount (USD)</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
+                  <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
                   <input required type="number" step="0.01" min="0.01" value={bankForm.amount}
-                    onChange={e => setBankForm(f => ({ ...f, amount: e.target.value }))}
-                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                    onChange={e => setBankForm(f => ({ ...f, amount: e.target.value }))} className={`${INPUT} pl-7`} />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Memo (optional)</label>
-              <input value={bankForm.memo} onChange={e => setBankForm(f => ({ ...f, memo: e.target.value }))}
-                placeholder="e.g. Invoice #1042 payment"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label className="block text-[10px] text-muted-foreground mb-1">Memo (optional)</label>
+              <input value={bankForm.memo} onChange={e => setBankForm(f => ({ ...f, memo: e.target.value }))} placeholder="e.g. Invoice #1042" className={INPUT} />
             </div>
 
-            {error && <div className="bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2">{error}</div>}
-            {success && <div className="bg-green-50 text-green-700 text-sm rounded-lg px-3 py-2">{success}</div>}
+            {error && <div className="text-xs text-red-400 px-3 py-2" style={{ border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
+            {success && <div className="text-xs text-gold px-3 py-2" style={{ border: '1px solid rgba(201,146,42,0.2)' }}>{success}</div>}
 
             <button type="submit" disabled={loading}
-              className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-              <ArrowUpRight size={16} /> {loading ? 'Sending...' : 'Send Bank Payout'}
+              className="w-full bg-gold text-rx-bg py-2.5 text-[11px] tracking-[0.16em] uppercase font-semibold hover:bg-gold-light transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              <ArrowUpRight size={14} /> {loading ? 'Sending...' : 'Send Bank Payout'}
             </button>
           </form>
         )}
 
-        {/* Crypto payout form */}
         {tab === 'crypto' && (
           <form onSubmit={handleCryptoPayout} className="space-y-4">
-            <div className="bg-blue-50 text-blue-700 text-xs rounded-lg px-3 py-2">
-              Send USDC or USDT directly to any external wallet address. Arrives in minutes.
+            <div className="text-xs text-muted-foreground px-3 py-2" style={{ border: '1px solid rgba(201,146,42,0.12)', background: 'rgba(201,146,42,0.04)' }}>
+              Send USDC or USDT directly to any external wallet. Arrives in minutes.
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Recipient Name</label>
-                <input required value={cryptoForm.recipientName} onChange={e => setCryptoForm(f => ({ ...f, recipientName: e.target.value }))}
-                  placeholder="Jane Smith"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <label className="block text-[10px] text-muted-foreground mb-1">Recipient Name</label>
+                <input required value={cryptoForm.recipientName} onChange={e => setCryptoForm(f => ({ ...f, recipientName: e.target.value }))} placeholder="Jane Smith" className={INPUT} />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Recipient Email</label>
-                <input required type="email" value={cryptoForm.recipientEmail} onChange={e => setCryptoForm(f => ({ ...f, recipientEmail: e.target.value }))}
-                  placeholder="jane@example.com"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <label className="block text-[10px] text-muted-foreground mb-1">Recipient Email</label>
+                <input required type="email" value={cryptoForm.recipientEmail} onChange={e => setCryptoForm(f => ({ ...f, recipientEmail: e.target.value }))} placeholder="jane@example.com" className={INPUT} />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Recipient Wallet Address</label>
-              <input required value={cryptoForm.recipientAddress} onChange={e => setCryptoForm(f => ({ ...f, recipientAddress: e.target.value }))}
-                placeholder="0x..."
-                className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label className="block text-[10px] text-muted-foreground mb-1">Recipient Wallet Address</label>
+              <input required value={cryptoForm.recipientAddress} onChange={e => setCryptoForm(f => ({ ...f, recipientAddress: e.target.value }))} placeholder="0x..." className={`${INPUT} font-mono`} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Token & Network</label>
-                <select value={cryptoForm.method} onChange={e => setCryptoForm(f => ({ ...f, method: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <label className="block text-[10px] text-muted-foreground mb-1">Token & Network</label>
+                <select value={cryptoForm.method} onChange={e => setCryptoForm(f => ({ ...f, method: e.target.value }))} className={INPUT}>
                   <option value="USDC_POLYGON">USDC (Polygon) — recommended</option>
                   <option value="USDC_ETH">USDC (Ethereum)</option>
                   <option value="USDT_ETH">USDT (Ethereum)</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Amount (USD)</label>
+                <label className="block text-[10px] text-muted-foreground mb-1">Amount (USD)</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
+                  <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
                   <input required type="number" step="0.01" min="0.01" value={cryptoForm.amount}
-                    onChange={e => setCryptoForm(f => ({ ...f, amount: e.target.value }))}
-                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                    onChange={e => setCryptoForm(f => ({ ...f, amount: e.target.value }))} className={`${INPUT} pl-7`} />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Memo (optional)</label>
-              <input value={cryptoForm.memo} onChange={e => setCryptoForm(f => ({ ...f, memo: e.target.value }))}
-                placeholder="e.g. Freelance payment"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label className="block text-[10px] text-muted-foreground mb-1">Memo (optional)</label>
+              <input value={cryptoForm.memo} onChange={e => setCryptoForm(f => ({ ...f, memo: e.target.value }))} placeholder="e.g. Freelance payment" className={INPUT} />
             </div>
 
-            {error && <div className="bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2">{error}</div>}
-            {success && <div className="bg-green-50 text-green-700 text-sm rounded-lg px-3 py-2">{success}</div>}
+            {error && <div className="text-xs text-red-400 px-3 py-2" style={{ border: '1px solid rgba(239,68,68,0.2)' }}>{error}</div>}
+            {success && <div className="text-xs text-gold px-3 py-2" style={{ border: '1px solid rgba(201,146,42,0.2)' }}>{success}</div>}
 
             <button type="submit" disabled={loading}
-              className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-              <ArrowUpRight size={16} /> {loading ? 'Sending...' : 'Send Crypto Payout'}
+              className="w-full bg-gold text-rx-bg py-2.5 text-[11px] tracking-[0.16em] uppercase font-semibold hover:bg-gold-light transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              <ArrowUpRight size={14} /> {loading ? 'Sending...' : 'Send Crypto Payout'}
             </button>
           </form>
         )}
       </div>
 
       {/* Payout history */}
-      <div className="bg-white rounded-2xl border shadow-sm">
-        <div className="p-4 border-b font-semibold text-gray-900">Payout History</div>
-        <div className="divide-y">
-          {payouts.length === 0 && <div className="p-6 text-center text-gray-400">No payouts yet</div>}
-          {payouts.map(p => (
-            <div key={p.id} className="flex items-center justify-between p-4">
-              <div>
-                <div className="text-sm font-medium text-gray-900">{p.recipientName}</div>
-                <div className="text-xs text-gray-400">{p.recipientEmail} · {p.method} · {new Date(p.createdAt).toLocaleDateString()}</div>
-                {p.memo && <div className="text-xs text-gray-400 italic">{p.memo}</div>}
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[p.status]}`}>{p.status}</span>
-                <span className="font-semibold text-gray-900">{p.currency} {Number(p.amount).toFixed(2)}</span>
-              </div>
-            </div>
-          ))}
+      <div className="bg-card" style={BORDER}>
+        <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(201,146,42,0.12)' }}>
+          <span className="text-[9px] tracking-[0.28em] uppercase text-gold">Payout History</span>
         </div>
+        {payouts.length === 0 && (
+          <div className="p-8 text-center text-[10px] tracking-[0.18em] uppercase text-muted-foreground">No payouts yet</div>
+        )}
+        {payouts.map((p, i) => (
+          <div key={p.id} className="flex items-center justify-between px-5 py-4"
+            style={{ borderTop: i > 0 ? '1px solid rgba(201,146,42,0.08)' : 'none' }}>
+            <div>
+              <div className="text-sm text-foreground">{p.recipientName}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {p.recipientEmail} · {p.method} · {new Date(p.createdAt).toLocaleDateString()}
+              </div>
+              {p.memo && <div className="text-[10px] text-muted-foreground/60 italic">{p.memo}</div>}
+            </div>
+            <div className="flex items-center gap-4">
+              <span className={`text-[9px] tracking-[0.1em] uppercase px-2 py-0.5 border ${statusBadge[p.status]}`}>
+                {p.status}
+              </span>
+              <span className="text-sm font-medium text-foreground tabular-nums">
+                {p.currency} {Number(p.amount).toFixed(2)}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

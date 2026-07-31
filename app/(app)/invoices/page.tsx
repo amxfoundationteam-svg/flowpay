@@ -15,13 +15,24 @@ interface Invoice {
   createdAt: string
 }
 
-const statusColors: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-600',
-  SENT: 'bg-blue-100 text-blue-700',
-  PAID: 'bg-green-100 text-green-700',
-  OVERDUE: 'bg-red-100 text-red-700',
-  CANCELLED: 'bg-gray-100 text-gray-400',
+const statusBadge: Record<string, string> = {
+  DRAFT: 'text-muted-foreground border-border bg-secondary',
+  SENT: 'text-blue-400 border-blue-400/30 bg-blue-400/8',
+  PAID: 'text-gold border-gold/30 bg-gold/8',
+  OVERDUE: 'text-red-400 border-red-500/30 bg-red-500/8',
+  CANCELLED: 'text-muted-foreground/50 border-border bg-secondary',
 }
+
+const INPUT = 'w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition'
+const BORDER = { border: '1px solid rgba(201,146,42,0.15)' }
+
+const PAYMENT_METHODS = [
+  { value: 'CARD', label: 'Credit / Debit Card' },
+  { value: 'ACH', label: 'ACH / Bank Transfer' },
+  { value: 'USDC_POLYGON', label: 'USDC (Polygon)' },
+  { value: 'USDC_ETH', label: 'USDC (Ethereum)' },
+  { value: 'USDT_ETH', label: 'USDT (Ethereum)' },
+]
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -76,99 +87,121 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
-          <Plus size={16} /> New Invoice
+        <h1 className="font-serif font-normal text-2xl tracking-wide text-foreground">Invoices</h1>
+        <button onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-2 bg-gold text-rx-bg px-4 py-2 text-[10px] tracking-[0.16em] uppercase font-semibold hover:bg-gold-light transition-colors">
+          <Plus size={13} /> New Invoice
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-2xl border p-6 space-y-4">
-          <h2 className="font-semibold text-gray-900">Create Invoice</h2>
+        <form onSubmit={handleCreate} className="bg-card p-6 space-y-5" style={BORDER}>
+          <h2 className="text-[10px] tracking-[0.2em] uppercase text-muted-foreground">Create Invoice</h2>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Client Name</label>
-              <input required value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label className="block text-[10px] text-muted-foreground mb-1">Client Name</label>
+              <input required value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} className={INPUT} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Client Email</label>
-              <input required type="email" value={form.clientEmail} onChange={e => setForm(f => ({ ...f, clientEmail: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label className="block text-[10px] text-muted-foreground mb-1">Client Email</label>
+              <input required type="email" value={form.clientEmail} onChange={e => setForm(f => ({ ...f, clientEmail: e.target.value }))} className={INPUT} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Due Date</label>
-              <input required type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label className="block text-[10px] text-muted-foreground mb-1">Due Date</label>
+              <input required type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} className={INPUT} />
             </div>
           </div>
 
           <div>
-            <label className="text-xs text-gray-500 mb-2 block">Accept Payment Methods</label>
+            <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-2">Accept Payment Methods</label>
             <div className="grid grid-cols-2 gap-2">
-              {[
-                { value: 'CARD', label: '💳 Credit / Debit Card' },
-                { value: 'ACH', label: '🏦 ACH / Bank Transfer' },
-                { value: 'USDC_POLYGON', label: '🪙 USDC (Polygon)' },
-                { value: 'USDC_ETH', label: '🪙 USDC (Ethereum)' },
-                { value: 'USDT_ETH', label: '🪙 USDT (Ethereum)' },
-              ].map(m => (
-                <button key={m.value} type="button" onClick={() => toggleMethod(m.value)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-left transition ${form.paymentMethods.includes(m.value) ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                  <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${form.paymentMethods.includes(m.value) ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}`}>
-                    {form.paymentMethods.includes(m.value) && <span className="text-white text-xs">✓</span>}
-                  </span>
-                  {m.label}
-                </button>
-              ))}
+              {PAYMENT_METHODS.map(m => {
+                const on = form.paymentMethods.includes(m.value)
+                return (
+                  <button key={m.value} type="button" onClick={() => toggleMethod(m.value)}
+                    className={`flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors ${
+                      on ? 'text-gold bg-gold/8' : 'text-muted-foreground bg-secondary hover:text-foreground'
+                    }`}
+                    style={{ border: on ? '1px solid rgba(201,146,42,0.4)' : '1px solid rgba(201,146,42,0.12)' }}>
+                    <span className={`w-3.5 h-3.5 flex items-center justify-center flex-shrink-0 text-[9px] ${
+                      on ? 'bg-gold text-rx-bg' : 'bg-secondary'
+                    }`} style={{ border: on ? 'none' : '1px solid rgba(201,146,42,0.2)' }}>
+                      {on && '✓'}
+                    </span>
+                    {m.label}
+                  </button>
+                )
+              })}
             </div>
             {form.paymentMethods.length === 0 && (
-              <p className="text-xs text-red-500 mt-1">Select at least one payment method</p>
+              <p className="text-[10px] text-red-400 mt-1">Select at least one payment method</p>
             )}
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs text-gray-500">Line Items</label>
-              <button type="button" onClick={addLine} className="text-xs text-indigo-600 hover:underline">+ Add line</button>
+              <label className="text-[10px] tracking-[0.14em] uppercase text-muted-foreground">Line Items</label>
+              <button type="button" onClick={addLine} className="text-[10px] tracking-[0.1em] uppercase text-gold hover:text-gold-light transition-colors">
+                + Add line
+              </button>
             </div>
             {form.lineItems.map((li, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 mb-2">
-                <input placeholder="Description" value={li.description} onChange={e => updateLine(i, 'description', e.target.value)} className="col-span-6 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-                <input type="number" placeholder="Qty" value={li.quantity} onChange={e => updateLine(i, 'quantity', parseInt(e.target.value))} className="col-span-2 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-                <input type="number" placeholder="Price" value={li.unitPrice} onChange={e => updateLine(i, 'unitPrice', parseFloat(e.target.value))} className="col-span-3 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-                <div className="col-span-1 flex items-center justify-center text-sm font-medium text-gray-600">
+                <input placeholder="Description" value={li.description}
+                  onChange={e => updateLine(i, 'description', e.target.value)}
+                  className={`col-span-6 ${INPUT}`} />
+                <input type="number" placeholder="Qty" value={li.quantity}
+                  onChange={e => updateLine(i, 'quantity', parseInt(e.target.value))}
+                  className={`col-span-2 ${INPUT}`} />
+                <input type="number" placeholder="Price" value={li.unitPrice}
+                  onChange={e => updateLine(i, 'unitPrice', parseFloat(e.target.value))}
+                  className={`col-span-3 ${INPUT}`} />
+                <div className="col-span-1 flex items-center justify-center text-xs text-muted-foreground tabular-nums">
                   ${(li.quantity * li.unitPrice).toFixed(0)}
                 </div>
               </div>
             ))}
-            <div className="text-right text-sm font-semibold text-gray-900 mt-2">Total: ${total.toFixed(2)}</div>
+            <div className="text-right text-sm text-foreground mt-2 font-medium tabular-nums">
+              Total: ${total.toFixed(2)}
+            </div>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-50">
+          <button type="submit" disabled={loading}
+            className="w-full bg-gold text-rx-bg py-2.5 text-[11px] tracking-[0.18em] uppercase font-semibold hover:bg-gold-light transition-colors disabled:opacity-50">
             {loading ? 'Creating...' : 'Create Invoice'}
           </button>
         </form>
       )}
 
-      <div className="bg-white rounded-2xl border shadow-sm">
-        <div className="divide-y">
-          {invoices.length === 0 && <div className="p-8 text-center text-gray-400">No invoices yet</div>}
-          {invoices.map(inv => (
-            <div key={inv.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-              <div>
-                <div className="text-sm font-medium text-gray-900">{inv.number} · {inv.clientName}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{inv.clientEmail} · Due {new Date(inv.dueDate).toLocaleDateString()}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[inv.status]}`}>{inv.status}</span>
-                <span className="font-semibold text-gray-900">{inv.currency} {Number(inv.total).toFixed(2)}</span>
-                {inv.status === 'DRAFT' && (
-                  <button onClick={() => sendInvoice(inv.id)} className="text-indigo-600 hover:text-indigo-800 transition">
-                    <Send size={16} />
-                  </button>
-                )}
+      <div className="bg-card" style={BORDER}>
+        {invoices.length === 0 && (
+          <div className="p-10 text-center text-[10px] tracking-[0.18em] uppercase text-muted-foreground">No invoices yet</div>
+        )}
+        {invoices.map((inv, i) => (
+          <div key={inv.id} className="flex items-center justify-between px-5 py-4 hover:bg-gold/5 transition-colors"
+            style={{ borderTop: i > 0 ? '1px solid rgba(201,146,42,0.08)' : 'none' }}>
+            <div>
+              <div className="text-sm text-foreground">{inv.number} · {inv.clientName}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {inv.clientEmail} · Due {new Date(inv.dueDate).toLocaleDateString()}
               </div>
             </div>
-          ))}
-        </div>
+            <div className="flex items-center gap-4">
+              <span className={`text-[9px] tracking-[0.1em] uppercase px-2 py-0.5 border ${statusBadge[inv.status]}`}>
+                {inv.status}
+              </span>
+              <span className="text-sm font-medium text-foreground tabular-nums">
+                {inv.currency} {Number(inv.total).toFixed(2)}
+              </span>
+              {inv.status === 'DRAFT' && (
+                <button onClick={() => sendInvoice(inv.id)} className="text-gold hover:text-gold-light transition-colors">
+                  <Send size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

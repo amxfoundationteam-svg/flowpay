@@ -12,6 +12,8 @@ const methods: { value: Method; label: string; desc: string }[] = [
   { value: 'ACH', label: 'ACH / Bank', desc: 'Direct bank transfer' },
 ]
 
+const INPUT = 'w-full bg-secondary border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold transition'
+
 interface BankAccount {
   id: string
   institutionName: string
@@ -30,7 +32,6 @@ export default function SendPage() {
   const [result, setResult] = useState<{ status: string; txHash?: string; clientSecret?: string } | null>(null)
   const [error, setError] = useState('')
 
-  // Card fields
   const [cardName, setCardName] = useState('')
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
@@ -54,21 +55,16 @@ export default function SendPage() {
 
     try {
       let endpoint = '/api/wallet/send'
-      let body: Record<string, unknown> = {
-        method,
-        amount: parseFloat(amount),
-      }
+      let body: Record<string, unknown> = { method, amount: parseFloat(amount) }
 
       if (isCrypto) {
         if (recipientEmail) body.recipientEmail = recipientEmail
         if (recipientAddress) body.recipientAddress = recipientAddress
       }
-
       if (isACH) {
         endpoint = '/api/payments/ach/initiate'
         body = { amount: parseFloat(amount), bankAccountId, recipientEmail }
       }
-
       if (isCard) {
         endpoint = '/api/payments/card/intent'
         body = { amount: parseFloat(amount), receiverId: recipientEmail, cardName, cardNumber, cardExpiry, cardCvc }
@@ -79,7 +75,6 @@ export default function SendPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-
       const data = await res.json()
       if (!res.ok) { setError(data.error?.message ?? JSON.stringify(data.error) ?? 'Payment failed'); return }
       setResult(data)
@@ -92,79 +87,60 @@ export default function SendPage() {
 
   return (
     <div className="max-w-lg space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Send Payment</h1>
+      <h1 className="font-serif font-normal text-2xl tracking-wide text-foreground">Send Payment</h1>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="bg-card space-y-5 p-6" style={{ border: '1px solid rgba(201,146,42,0.15)' }}>
+
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">Payment Method</label>
+          <label className="block text-[10px] tracking-[0.18em] uppercase text-muted-foreground mb-2">Payment Method</label>
           <div className="grid grid-cols-2 gap-2">
             {methods.map(m => (
-              <button
-                key={m.value}
-                type="button"
-                onClick={() => setMethod(m.value)}
-                className={`p-3 rounded-xl border text-left transition ${method === m.value ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'}`}
-              >
-                <div className="text-sm font-medium text-gray-900">{m.label}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{m.desc}</div>
+              <button key={m.value} type="button" onClick={() => setMethod(m.value)}
+                className={`p-3 text-left transition-colors ${
+                  method === m.value
+                    ? 'bg-gold/8 text-foreground'
+                    : 'bg-secondary text-muted-foreground hover:text-foreground'
+                }`}
+                style={{ border: method === m.value ? '1px solid rgba(201,146,42,0.5)' : '1px solid rgba(201,146,42,0.12)' }}>
+                <div className="text-xs font-medium">{m.label}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{m.desc}</div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Crypto fields */}
         {isCrypto && (
           <>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Recipient Email (FlowPay user)</label>
-              <input
-                type="email"
-                value={recipientEmail}
-                onChange={e => setRecipientEmail(e.target.value)}
-                placeholder="user@example.com"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">
+                Recipient Email (River X user)
+              </label>
+              <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)}
+                placeholder="user@example.com" className={INPUT} />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Or Wallet Address</label>
-              <input
-                type="text"
-                value={recipientAddress}
-                onChange={e => setRecipientAddress(e.target.value)}
-                placeholder="0x..."
-                className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">Or Wallet Address</label>
+              <input type="text" value={recipientAddress} onChange={e => setRecipientAddress(e.target.value)}
+                placeholder="0x..." className={`${INPUT} font-mono`} />
             </div>
           </>
         )}
 
-        {/* ACH fields */}
         {isACH && (
           <>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Recipient Email</label>
-              <input
-                type="email"
-                value={recipientEmail}
-                onChange={e => setRecipientEmail(e.target.value)}
-                placeholder="user@example.com"
-                required
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">Recipient Email</label>
+              <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)}
+                placeholder="user@example.com" required className={INPUT} />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Pay from Bank Account</label>
+              <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">Pay from Bank Account</label>
               {bankAccounts.length === 0 ? (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-3 text-sm text-yellow-700">
-                  No linked bank accounts. Go to <strong>Wallet</strong> to link a bank account via Plaid first.
+                <div className="text-xs text-muted-foreground px-3 py-3 bg-secondary" style={{ border: '1px solid rgba(201,146,42,0.15)' }}>
+                  No linked bank accounts. Go to <strong className="text-foreground">Wallet</strong> to link one first.
                 </div>
               ) : (
-                <select
-                  value={bankAccountId}
-                  onChange={e => setBankAccountId(e.target.value)}
-                  required
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
+                <select value={bankAccountId} onChange={e => setBankAccountId(e.target.value)} required className={INPUT}>
                   <option value="">Select account...</option>
                   {bankAccounts.map(acc => (
                     <option key={acc.id} value={acc.id}>
@@ -177,87 +153,74 @@ export default function SendPage() {
           </>
         )}
 
-        {/* Card fields */}
         {isCard && (
           <div className="space-y-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">Recipient Email (FlowPay user)</label>
-              <input
-                type="email"
-                value={recipientEmail}
-                onChange={e => setRecipientEmail(e.target.value)}
-                placeholder="user@example.com"
-                required
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">
+                Recipient Email (River X user)
+              </label>
+              <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)}
+                placeholder="user@example.com" required className={INPUT} />
             </div>
-            <div className="border-t pt-3 space-y-3">
-              <p className="text-xs text-gray-500 font-medium">Your Card Details</p>
+            <div className="pt-3 space-y-3" style={{ borderTop: '1px solid rgba(201,146,42,0.12)' }}>
+              <p className="text-[10px] tracking-[0.12em] uppercase text-muted-foreground">Your Card Details</p>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Name on Card</label>
-                <input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="John Doe" required
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <label className="block text-[10px] text-muted-foreground mb-1">Name on Card</label>
+                <input value={cardName} onChange={e => setCardName(e.target.value)} placeholder="John Doe" required className={INPUT} />
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Card Number</label>
+                <label className="block text-[10px] text-muted-foreground mb-1">Card Number</label>
                 <input value={cardNumber} onChange={e => setCardNumber(e.target.value)} placeholder="4242 4242 4242 4242"
-                  maxLength={19} required
-                  className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  maxLength={19} required className={`${INPUT} font-mono`} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Expiry</label>
+                  <label className="block text-[10px] text-muted-foreground mb-1">Expiry</label>
                   <input value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} placeholder="MM/YY" maxLength={5} required
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    className={`${INPUT} font-mono`} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">CVC</label>
+                  <label className="block text-[10px] text-muted-foreground mb-1">CVC</label>
                   <input value={cardCvc} onChange={e => setCardCvc(e.target.value)} placeholder="123" maxLength={4} required
-                    className="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                    className={`${INPUT} font-mono`} />
                 </div>
               </div>
-              <div className="bg-blue-50 text-blue-700 text-xs rounded-lg px-3 py-2">
-                Your card details are processed securely via Stripe. FlowPay never stores your card number.
-              </div>
+              <p className="text-[10px] text-muted-foreground px-3 py-2 bg-secondary" style={{ border: '1px solid rgba(201,146,42,0.12)' }}>
+                Card details are processed securely via Stripe. River X never stores your card number.
+              </p>
             </div>
           </div>
         )}
 
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1 block">Amount (USD)</label>
+          <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">Amount (USD)</label>
           <div className="relative">
-            <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
-            <input
-              type="number"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              placeholder="0.00"
-              step="0.01"
-              min="0.01"
-              required
-              className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <span className="absolute left-3 top-2.5 text-muted-foreground text-sm">$</span>
+            <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
+              placeholder="0.00" step="0.01" min="0.01" required
+              className={`${INPUT} pl-7`} />
           </div>
         </div>
 
-        {error && <div className="bg-red-50 text-red-600 text-sm rounded-lg px-3 py-2">{error}</div>}
-
-        {result && (
-          <div className="bg-green-50 text-green-700 text-sm rounded-lg px-3 py-3 space-y-1">
-            <div className="font-medium">
-              {isACH ? 'ACH transfer initiated! Arrives in 1-3 business days.' : 'Payment sent!'}
-            </div>
-            {result.txHash && <div className="font-mono text-xs break-all">{result.txHash}</div>}
-            {result.clientSecret && <div className="text-xs">Payment intent created — awaiting confirmation.</div>}
+        {error && (
+          <div className="text-xs text-red-400 px-3 py-2 bg-red-500/8" style={{ border: '1px solid rgba(239,68,68,0.2)' }}>
+            {error}
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          <Send size={16} />
+        {result && (
+          <div className="text-xs text-gold px-3 py-3 space-y-1 bg-gold/5" style={{ border: '1px solid rgba(201,146,42,0.2)' }}>
+            <div className="font-medium">
+              {isACH ? 'ACH transfer initiated — arrives in 1–3 business days.' : 'Payment sent successfully.'}
+            </div>
+            {result.txHash && <div className="font-mono text-muted-foreground break-all">{result.txHash}</div>}
+            {result.clientSecret && <div className="text-muted-foreground">Payment intent created — awaiting confirmation.</div>}
+          </div>
+        )}
+
+        <button type="submit" disabled={loading}
+          className="w-full bg-gold text-rx-bg py-3 text-[11px] tracking-[0.18em] uppercase font-semibold hover:bg-gold-light transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+          <Send size={14} />
           {loading ? 'Sending...' : 'Send Payment'}
         </button>
       </form>

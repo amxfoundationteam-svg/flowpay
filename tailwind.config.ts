@@ -23,6 +23,15 @@ const config: Config = {
         accent: { DEFAULT: 'hsl(var(--accent))', foreground: 'hsl(var(--accent-foreground))' },
         popover: { DEFAULT: 'hsl(var(--popover))', foreground: 'hsl(var(--popover-foreground))' },
         card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
+        gold: { DEFAULT: '#C9922A', light: '#E0B24A' },
+        rx: {
+          bg: '#080807',
+          card: '#0F0F0D',
+          surface: '#161512',
+          border: '#252118',
+          text: '#EDE8DF',
+          muted: '#6B6558',
+        },
       },
       borderRadius: { lg: 'var(--radius)', md: 'calc(var(--radius) - 2px)', sm: 'calc(var(--radius) - 4px)' },
       keyframes: {
