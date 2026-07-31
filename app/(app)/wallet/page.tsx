@@ -35,11 +35,11 @@ export default function WalletPage() {
   const [verifyForm, setVerifyForm] = useState({ deposit1: '', deposit2: '' })
 
   const refreshAccounts = () =>
-    fetch('/api/bank/accounts').then(r => r.json()).then(d => setBankAccounts(d.accounts ?? []))
+    fetch('/api/bank/accounts').then(r => r.ok ? r.json() : null).then(d => { if (d) setBankAccounts(d.accounts ?? []) })
 
   useEffect(() => {
-    fetch('/api/wallet/address').then(r => r.json()).then(setAddresses)
-    fetch('/api/wallet/balance').then(r => r.json()).then(setBalance)
+    fetch('/api/wallet/address').then(r => r.ok ? r.json() : null).then(d => { if (d?.ethereum) setAddresses(d) })
+    fetch('/api/wallet/balance').then(r => r.ok ? r.json() : null).then(d => { if (d?.usdc) setBalance(d) })
     refreshAccounts()
   }, [])
 
@@ -141,8 +141,8 @@ export default function WalletPage() {
     setVerifyLoading(false)
   }
 
-  const totalUsdc = balance ? (parseFloat(balance.usdc.polygon) + parseFloat(balance.usdc.ethereum)).toFixed(2) : '0.00'
-  const totalUsdt = balance ? parseFloat(balance.usdt.ethereum).toFixed(2) : '0.00'
+  const totalUsdc = balance?.usdc ? (parseFloat(balance.usdc.polygon ?? '0') + parseFloat(balance.usdc.ethereum ?? '0')).toFixed(2) : '0.00'
+  const totalUsdt = balance?.usdt ? parseFloat(balance.usdt.ethereum ?? '0').toFixed(2) : '0.00'
   const unverifiedAccounts = bankAccounts.filter(a => !a.verified)
 
   const tabs = [
