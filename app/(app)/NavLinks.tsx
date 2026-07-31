@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Wallet, Send, Download, FileText, ArrowUpRight } from 'lucide-react'
+import { LayoutDashboard, Wallet, Send, Download, FileText, ArrowUpRight, User } from 'lucide-react'
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const nav = [
   { href: '/receive', label: 'Receive', icon: Download },
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/payouts', label: 'Payouts', icon: ArrowUpRight },
+  { href: '/profile', label: 'Profile', icon: User },
 ]
 
 export default function NavLinks() {

@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Send } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Send, Search, CheckCircle } from 'lucide-react'
 
 type Method = 'USDC_POLYGON' | 'USDC_ETH' | 'USDT_ETH' | 'CARD' | 'ACH'
 
@@ -32,6 +32,11 @@ export default function SendPage() {
   const [result, setResult] = useState<{ status: string; txHash?: string; clientSecret?: string } | null>(null)
   const [error, setError] = useState('')
 
+  const [rxLookup, setRxLookup] = useState<{ displayName: string; ethAddress: string; polyAddress: string } | null>(null)
+  const [rxLookupError, setRxLookupError] = useState('')
+  const [rxLooking, setRxLooking] = useState(false)
+  const rxDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const [cardName, setCardName] = useState('')
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
@@ -40,6 +45,34 @@ export default function SendPage() {
   const isCrypto = method.startsWith('USDC') || method.startsWith('USDT')
   const isACH = method === 'ACH'
   const isCard = method === 'CARD'
+  const isRxInput = recipientEmail.startsWith('RX$') || recipientEmail.startsWith('rx$')
+
+  const handleRecipientChange = (val: string) => {
+    setRecipientEmail(val)
+    setRxLookup(null)
+    setRxLookupError('')
+    if (!val.match(/^[Rr][Xx]\$/)) return
+    if (rxDebounce.current) clearTimeout(rxDebounce.current)
+    rxDebounce.current = setTimeout(async () => {
+      setRxLooking(true)
+      const res = await fetch(`/api/users/lookup?rxUsername=${encodeURIComponent(val)}`)
+      const data = await res.json()
+      setRxLooking(false)
+      if (res.ok) {
+        setRxLookup(data)
+        setRxLookupError('')
+        setRecipientAddress(method === 'USDC_POLYGON' ? data.polyAddress : data.ethAddress)
+      } else {
+        setRxLookupError(data.error ?? 'User not found')
+      }
+    }, 500)
+  }
+
+  useEffect(() => {
+    if (rxLookup) {
+      setRecipientAddress(method === 'USDC_POLYGON' ? rxLookup.polyAddress : rxLookup.ethAddress)
+    }
+  }, [method, rxLookup])
 
   useEffect(() => {
     if (isACH) {
@@ -113,16 +146,37 @@ export default function SendPage() {
           <>
             <div>
               <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">
-                Recipient Email (River X user)
+                Recipient — Email or RX$Username
               </label>
-              <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)}
-                placeholder="user@example.com" className={INPUT} />
+              <div className="relative">
+                <input
+                  value={recipientEmail}
+                  onChange={e => handleRecipientChange(e.target.value)}
+                  placeholder="user@example.com or RX$username"
+                  className={INPUT}
+                />
+                {rxLooking && (
+                  <Search size={13} className="absolute right-3 top-2.5 text-muted-foreground animate-pulse" />
+                )}
+              </div>
+              {rxLookup && (
+                <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 text-[11px] text-gold bg-gold/5"
+                  style={{ border: '1px solid rgba(201,146,42,0.2)' }}>
+                  <CheckCircle size={12} />
+                  <span>{rxLookup.displayName}</span>
+                </div>
+              )}
+              {rxLookupError && (
+                <p className="text-[10px] text-red-400 mt-1">{rxLookupError}</p>
+              )}
             </div>
-            <div>
-              <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">Or Wallet Address</label>
-              <input type="text" value={recipientAddress} onChange={e => setRecipientAddress(e.target.value)}
-                placeholder="0x..." className={`${INPUT} font-mono`} />
-            </div>
+            {!isRxInput && (
+              <div>
+                <label className="block text-[10px] tracking-[0.14em] uppercase text-muted-foreground mb-1">Or Direct Wallet Address</label>
+                <input type="text" value={recipientAddress} onChange={e => setRecipientAddress(e.target.value)}
+                  placeholder="0x..." className={`${INPUT} font-mono`} />
+              </div>
+            )}
           </>
         )}
 
